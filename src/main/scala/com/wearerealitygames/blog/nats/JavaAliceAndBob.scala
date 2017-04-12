@@ -1,17 +1,10 @@
 package com.wearerealitygames.blog.nats
 
 import java.nio.charset.StandardCharsets
-
 import io.nats.client._
 
-object JavaClient {
+object JavaAliceAndBob  {
   val subject = "translate"
-
-  def translate(en: String): Option[String] = en match {
-    case "cat" => Some("kato")
-    case "dog" => Some("hundo")
-    case s: String => None
-  }
 
   def main(args: Array[String]): Unit = {
     val conn: Connection = Nats.connect("nats://0.0.0.0:4222")
@@ -28,7 +21,14 @@ object JavaClient {
 
   }
 
-  def alice(conn: Connection): AsyncSubscription = conn.subscribe(subject, new MessageHandler {
+  def alice(conn:Connection): AsyncSubscription = conn.subscribe(subject, new MessageHandler {
+
+    def translate(en: String): Option[String] = en match {
+      case "cat" => Some("kato")
+      case "dog" => Some("hundo")
+      case _: String => None
+    }
+
     override def onMessage(question: Message): Unit = {
       val questionPayload = new String(question.getData, StandardCharsets.UTF_8)
       println(s"A: Question ${questionPayload} received")
@@ -38,7 +38,6 @@ object JavaClient {
         conn.newInbox(),
         answerPayload.getBytes(StandardCharsets.UTF_8)
       )
-      //      println("A: Publishing answer")
       conn.publish(answer)
       conn.flush()
       println(s"A: Answer ${answerPayload} published")
@@ -46,7 +45,7 @@ object JavaClient {
   })
 
 
-  def bob(conn: Connection): AsyncSubscription = {
+  def bob(conn:Connection): AsyncSubscription = {
     val questionPayload = "dog"
     val inbox = conn.newInbox()
     val question = new Message(
@@ -63,4 +62,6 @@ object JavaClient {
       }
     })
   }
+
+
 }
